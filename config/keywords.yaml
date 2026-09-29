@@ -1,0 +1,43 @@
+# Cloud and CI/CD keywords.
+# Matched as case-insensitive substrings of vendorProject, product,
+# and vulnerabilityName. Rows that do not match are kept.
+# "cloud" also matches VeloCloud and ownCloud. That is substring noise.
+keywords:
+  - kubernetes
+  - docker
+  - jenkins
+  - gitlab
+  - github
+  - gitea
+  - argo
+  - terraform
+  - ansible
+  - puppet
+  - chef
+  - helm
+  - istio
+  - envoy
+  - openshift
+  - rancher
+  - hashicorp
+  - vault
+  - consul
+  - nomad
+  - packer
+  - aws
+  - azure
+  - gcp
+  - cloud
+  - cloudflare
+  - lambda
+  - s3
+  - ec2
+  - container
+  - ci/cd
+  - jfrog
+  - artifactory
+  - teamcity
+  - vmware
+  - vcenter
+  - kestra
+  - mlflow
