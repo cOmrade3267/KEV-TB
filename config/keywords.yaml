@@ -1,7 +1,7 @@
-# Cloud and CI/CD keywords.
-# Matched as case-insensitive substrings of vendorProject, product,
-# and vulnerabilityName. Rows that do not match are kept.
-# "cloud" also matches VeloCloud and ownCloud. That is substring noise.
+# Cloud and CI/CD product tokens.
+# Matched as whole words in vendorProject, product, and vulnerabilityName.
+# The bare word "cloud" is omitted on purpose: it tags VeloCloud, ownCloud,
+# and Cisco Security Cloud Control, which are not this list.
 keywords:
   - kubernetes
   - docker
@@ -27,7 +27,6 @@ keywords:
   - aws
   - azure
   - gcp
-  - cloud
   - cloudflare
   - lambda
   - s3

@@ -5,6 +5,7 @@
 **Cloud / CI-CD related:** {{ cloud_count }}
 **Linked to ransomware campaigns:** {{ ransomware_count }}
 **Rows in this brief:** {{ shown_count }}
+**EPSS:** n/a = not yet scored by FIRST (as of {{ report_date }}).
 
 ---
 
@@ -25,11 +26,15 @@
 
 ---
 
-## Top 10 by EPSS Score
+## Top 10
 
-| CVE ID | Vendor / Product | EPSS | Ransomware | ATT&CK Technique | Due Date |
-|--------|------------------|------|------------|------------------|----------|
-{% for row in top10 %}| {{ row.cveID }} | {{ row.vendor_product }} | {{ row.epss_fmt }} | {{ row.ransomware_flag }} | {{ row.technique }} | {{ row.dueDate }} |
+Sorted by known ransomware use, then soonest CISA due date, then cloud/CI-CD relevance. EPSS is a column, not the sort key.
+
+EPSS: n/a = not yet scored by FIRST (as of {{ report_date }}).
+
+| CVE ID | Vendor / Product | Ransomware | Due Date | Cloud/CI-CD | EPSS | ATT&CK Technique |
+|--------|------------------|------------|----------|-------------|------|------------------|
+{% for row in top10 %}| {{ row.cveID }} | {{ row.vendor_product }} | {{ row.ransomware_flag }} | {{ row.dueDate }} | {{ row.cloud_flag }} | {{ row.epss_fmt }} | {{ row.technique }} |
 {% endfor %}
 
 ---
@@ -55,8 +60,8 @@
 ## Limitations
 
 - **ATT&CK mappings are heuristic, not authoritative.** They come only from the CWE and keyword rules in `config/mapping.yaml`. Review them before using the brief in a detection plan.
-- **EPSS is a probability estimate, not a guarantee of exploitation.** It estimates the chance of exploitation activity in the next 30 days.
-- **Cloud/CI-CD tagging is substring matching.** It keeps non-matching rows, and it can false-positive on names such as VeloCloud or ownCloud.
+- **EPSS is a probability estimate, not a guarantee of exploitation.** It estimates the chance of exploitation activity in the next 30 days. Most recent KEV additions are unscored, so EPSS is a supporting signal in this brief and not a ranking key.
+- **Cloud/CI-CD tagging is a whole-word match** against `config/keywords.yaml`. The bare word "cloud" is not on that list, so VeloCloud, ownCloud, and Cisco Security Cloud Control are not tagged.
 
 ---
 

@@ -18,7 +18,16 @@ def load_mapping_config(path: str) -> dict[str, Any]:
         return yaml.safe_load(handle)
 
 
-def _tagged(rule: dict[str, str], confidence: str) -> dict[str, str]:
+def _keyword_hit(rule: dict[str, Any], text: str) -> bool:
+    """True when a keyword is present and no exclude_if phrase is present."""
+    keywords = [str(word).lower() for word in rule.get("keywords", [])]
+    if not any(word in text for word in keywords):
+        return False
+    blocked = [str(word).lower() for word in rule.get("exclude_if", [])]
+    return not any(word in text for word in blocked)
+
+
+def _tagged(rule: dict[str, Any], confidence: str) -> dict[str, str]:
     """Copy a YAML rule and record which tier matched."""
     return {
         "technique_id": rule["technique_id"],
@@ -42,7 +51,7 @@ def map_single_cve(
 
     text = f"{vuln_name} {short_desc}".lower()
     for rule in config.get("keyword_rules", []):
-        if any(word.lower() in text for word in rule["keywords"]):
+        if _keyword_hit(rule, text):
             return _tagged(rule, "keyword")
 
     return _tagged(config["fallback"], "default")

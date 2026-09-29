@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
@@ -27,13 +28,22 @@ def filter_by_date(df: pd.DataFrame, days: int) -> pd.DataFrame:
     return df.loc[added >= cutoff].copy()
 
 
+def _keyword_pattern(keywords: list[str]) -> re.Pattern[str]:
+    """Whole-word match so 'cloud' does not fire inside VeloCloud or ownCloud."""
+    parts = [re.escape(word) for word in keywords if word.strip()]
+    if not parts:
+        return re.compile(r"(?!)")
+    return re.compile(r"\b(?:" + "|".join(parts) + r")\b", re.IGNORECASE)
+
+
 def tag_cloud_cicd(df: pd.DataFrame, keywords: list[str]) -> pd.DataFrame:
     """Add a cloud_cicd flag. Non-matching rows are kept.
 
-    A row matches when vendorProject, product, or vulnerabilityName
-    contains any keyword. Matching is a case-insensitive substring.
+    Keywords must match a whole word in vendorProject, product, or
+    vulnerabilityName. 'VeloCloud' does not match 'cloud'.
     """
     frame = df.copy()
+    pattern = _keyword_pattern(keywords)
 
     def matches(row: pd.Series) -> bool:
         text = " ".join(
@@ -42,8 +52,8 @@ def tag_cloud_cicd(df: pd.DataFrame, keywords: list[str]) -> pd.DataFrame:
                 str(row.get("product", "")),
                 str(row.get("vulnerabilityName", "")),
             ]
-        ).lower()
-        return any(word in text for word in keywords)
+        )
+        return pattern.search(text) is not None
 
     frame["cloud_cicd"] = frame.apply(matches, axis=1)
     return frame

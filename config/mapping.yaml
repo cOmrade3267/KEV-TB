@@ -83,10 +83,16 @@ keyword_rules:
     technique_name: "Command and Scripting Interpreter"
     rationale: "The name or description says command or code injection and no CWE rule matched."
 
+  - keywords: ["file upload", "unrestricted upload"]
+    technique_id: T1505.003
+    technique_name: "Server Software Component: Web Shell"
+    rationale: "The text says the flaw is used to upload a file. In KEV that outcome is a web shell, not a file read."
+
   - keywords: ["traversal"]
+    exclude_if: ["file upload", "unrestricted upload", "remote code execution"]
     technique_id: T1005
     technique_name: "Data from Local System"
-    rationale: "The name or description says path traversal and no CWE rule matched."
+    rationale: "Path traversal is treated as reading files on the host only when the text does not also describe file upload or remote code execution."
 
 fallback:
   technique_id: T1190

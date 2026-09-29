@@ -6,10 +6,10 @@ A Python CLI that builds a CTI-style weekly brief from the [CISA Known Exploited
 
 1. Downloads the CISA KEV JSON catalog.
 2. Keeps entries whose `dateAdded` falls in the last N calendar days (`--days`, default 90).
-3. Tags cloud and CI/CD products from `config/keywords.yaml`. Non-matching rows stay in the data. `--only-cloud` is what drops them.
-4. Fetches EPSS in batches of 50, with a timeout and retries. A CVE with no score stays blank and is shown as `n/a`.
+3. Tags cloud and CI/CD products from `config/keywords.yaml` using whole-word matches. Non-matching rows stay in the data. `--only-cloud` is what drops them.
+4. Fetches EPSS in batches of 50, with a timeout and retries. A CVE with no score stays blank and is shown as `n/a`. EPSS: n/a = not yet scored by FIRST (as of the report date).
 5. Assigns one MITRE ATT&CK technique from `config/mapping.yaml` (CWE, then keyword, then T1190).
-6. Writes `reports/kev-brief-YYYY-MM-DD.md`. `--pdf` also runs pandoc when it is installed.
+6. Writes `reports/kev-brief-YYYY-MM-DD.md`. The top 10 table is ordered by known ransomware use, then soonest CISA due date, then cloud/CI-CD relevance. EPSS is a column in that table, not the sort key. `--pdf` also runs pandoc when it is installed.
 
 The command prints how many rows survived each stage (`Fetched`, `Date-filtered`, `Cloud/CI-CD-tagged`) so you can check the keyword list against live data.
 
@@ -60,7 +60,7 @@ pytest
 | `--days` | 90 | Keep `dateAdded` within this many calendar days |
 | `--only-cloud` | off | Drop rows that did not match `config/keywords.yaml` |
 | `--out` | `reports/` | Directory for the Markdown file |
-| `--pdf` | off | Also call pandoc. If pandoc is missing, the Markdown file is still written |
+| `--pdf` | off | Also call pandoc. Needs pandoc and a PDF engine (xelatex, pdflatex, lualatex, tectonic, or typst). If either is missing, the Markdown file is still written |
 
 If the KEV download fails, the process exits non-zero and prints the error.
 
@@ -92,6 +92,6 @@ Network calls are mocked. The suite covers CWE match, keyword match, fallback, C
 ## Limitations
 
 - ATT&CK labels are heuristic. They are the rules in `config/mapping.yaml`, not an authoritative mapping. Memory-corruption CWEs are left on the T1190 default because one CWE covers browsers, kernels, and appliances.
-- EPSS is a probability estimate, not a statement that a CVE will be exploited.
-- Cloud/CI-CD tagging is a substring search. `cloud` also matches VeloCloud and ownCloud.
+- EPSS: n/a = not yet scored by FIRST (as of the report date; 2026-09-29 in the checked-in sample). EPSS is a probability estimate, not a statement that a CVE will be exploited. Most recent KEV additions are unscored, so EPSS is a supporting signal here and not a ranking key.
+- Cloud/CI-CD tagging is a whole-word match against `config/keywords.yaml`. The bare word "cloud" is not on that list, so VeloCloud, ownCloud, and Cisco Security Cloud Control are not tagged.
 - The tool does not write the executive summary. That block is for an analyst.

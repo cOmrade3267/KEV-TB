@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import shutil
 import subprocess
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -44,6 +45,26 @@ def _ransomware_flag(val: object) -> str:
     return "No"
 
 
+def _priority_top10(df: pd.DataFrame) -> pd.DataFrame:
+    """Rank the brief: ransomware, then soonest due date, then cloud/CI-CD.
+
+    EPSS is not a sort key. Missing due dates sort after real dates.
+    """
+    frame = df.copy()
+    frame["_ransom"] = frame["knownRansomwareCampaignUse"].map(
+        lambda value: str(value).strip().lower() == "known"
+    )
+    due = frame["dueDate"].astype(str).str.slice(0, 10)
+    frame["_due"] = due.where(due.str.fullmatch(r"\d{4}-\d{2}-\d{2}"), "9999-99-99")
+    frame["_cloud"] = frame["cloud_cicd"].fillna(False).astype(bool)
+    ordered = frame.sort_values(
+        ["_ransom", "_due", "_cloud"],
+        ascending=[False, True, False],
+        kind="mergesort",
+    )
+    return ordered.head(10)
+
+
 def build_context(
     df: pd.DataFrame,
     days: int,
@@ -74,12 +95,13 @@ def build_context(
         {
             "cveID": row["cveID"],
             "vendor_product": f"{row['vendorProject']} / {row['product']}",
-            "epss_fmt": _fmt_epss(row["epss"]),
+            "epss_fmt": _fmt_epss(row.get("epss")),
             "ransomware_flag": _ransomware_flag(row["knownRansomwareCampaignUse"]),
+            "cloud_flag": "Yes" if row.get("cloud_cicd") else "No",
             "technique": f"{row.get('technique_id', '')} {row.get('technique_name', '')}".strip(),
             "dueDate": row.get("dueDate", ""),
         }
-        for _, row in scored.nlargest(10, "epss").iterrows()
+        for _, row in _priority_top10(df).iterrows()
     ]
 
     counts: Counter[str] = Counter()
@@ -155,28 +177,28 @@ def write_report(content: str, out_dir: Path) -> Path:
     return out_path
 
 
+_LATEX_ENGINES = ("xelatex", "pdflatex", "lualatex")
+_PDF_ENGINES = _LATEX_ENGINES + ("tectonic", "typst")
+
+
 def convert_to_pdf(md_path: Path) -> Path | None:
-    """Convert Markdown to PDF with pandoc. Missing pandoc is not a failure."""
-    pdf_path = md_path.with_suffix(".pdf")
-    try:
-        subprocess.run(
-            [
-                "pandoc",
-                str(md_path),
-                "-o",
-                str(pdf_path),
-                "--pdf-engine=xelatex",
-                "-V",
-                "geometry:margin=1in",
-            ],
-            check=True,
-            capture_output=True,
-        )
-        return pdf_path
-    except FileNotFoundError:
+    """Convert Markdown to PDF with pandoc. A missing tool is not a failure."""
+    if shutil.which("pandoc") is None:
         print("NOTE: pandoc is not installed, so no PDF was written.")
-        print("      The Markdown report is complete. Install pandoc to use --pdf.")
+        print("      The Markdown report is complete. Install pandoc and a PDF engine to use --pdf.")
         return None
+    engine = next((name for name in _PDF_ENGINES if shutil.which(name)), None)
+    if engine is None:
+        print("NOTE: pandoc is installed, but no PDF engine was found.")
+        print("      Install xelatex, pdflatex, lualatex, tectonic, or typst. The Markdown report is complete.")
+        return None
+    pdf_path = md_path.with_suffix(".pdf")
+    command = ["pandoc", str(md_path), "-o", str(pdf_path), f"--pdf-engine={engine}"]
+    if engine in _LATEX_ENGINES:
+        command.extend(["-V", "geometry:margin=1in"])
+    try:
+        subprocess.run(command, check=True, capture_output=True)
+        return pdf_path
     except subprocess.CalledProcessError as exc:
         detail = exc.stderr.decode(errors="replace")[:200]
         print(f"WARNING: pandoc failed ({detail}). The Markdown report was kept.")

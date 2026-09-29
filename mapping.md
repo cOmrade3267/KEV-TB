@@ -37,7 +37,8 @@ Used only when no CWE rule matched. Matching is a case-insensitive substring of 
 |----------|-----------|--------------------|
 | escalat, elevat, privileged access | T1068 Exploitation for Privilege Escalation | Catches "privilege escalation", "elevate privileges", and "gain privileged access" when no CWE rule matched. The bare word "privilege" is not a keyword: Cisco IOS CVE-2008-4128 says `show privilege`, which is a CLI command, not escalation. |
 | command injection, code injection | T1059 Command and Scripting Interpreter | Catches CWE-77 and CWE-96, which are the same class as CWE-78 and CWE-94 but are not separate CWE rules. |
-| traversal | T1005 Data from Local System | Catches path-traversal names whose CWE is a variant such as CWE-35 rather than CWE-22. |
+| file upload, unrestricted upload | T1505.003 Server Software Component: Web Shell | Checked before the traversal rule. WSO2 CVE-2026-5430 says "path traversal" and also "unrestricted file upload" plus remote code execution. The upload phrase is the outcome, so this is a web shell rather than a file read. |
+| traversal, unless the text also says file upload, unrestricted upload, or remote code execution | T1005 Data from Local System | Catches path-traversal names whose CWE is a variant such as CWE-35 rather than CWE-22. The exclusion is what keeps CVE-2026-5430 off T1005. |
 
 ## Fallback
 
